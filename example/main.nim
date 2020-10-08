@@ -2,17 +2,12 @@ import asynchttpserver, asyncdispatch, random, json, httpcore
 import allographer/query_builder
 import ../src/core
 
-
-proc controller():Response =
-  construct()
-  echo "=== controller"
-  return Response()
+import controllers/controller1
+import controllers/controller2
 
 var routes = newRoutes()
-echo routes.repr
+routes.get("/", controller1.getProc)
+routes.get("/2", controller2.getProc2)
+routes.post("/", controller1.postProc)
 
-routes.add("get", "/", controller)
-echo routes.repr
-
-for route in routes.values:
-  discard route.action()
+serve(routes)
