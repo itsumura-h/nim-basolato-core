@@ -8,7 +8,7 @@ putEnv("DB_PASSWORD", "Password!")
 putEnv("DB_DATABASE", "allographer")
 
 # Logging
-putEnv("LOG_IS_DISPLAY", "true")
+putEnv("LOG_IS_DISPLAY", "false")
 putEnv("LOG_IS_FILE", "false")
 putEnv("LOG_DIR", "/root/project/examples/benchmark/basolato/logs")
 

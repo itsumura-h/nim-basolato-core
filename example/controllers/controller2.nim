@@ -1,10 +1,12 @@
-import asyncdispatch, asynchttpserver
-import ../../src/core
+import json
+import ../../src/controller
+
 
 proc construct() =
-  echo "controller 2"
+  discard
 
-proc getProc2*(request:Request):Future[Response] {.async.} =
+proc getString*(request:Request, params:Params):Future[Response] {.async.} =
   construct()
-  echo "=== getProc2"
+  echo params.urlParams
+  echo params.queryParams
   return render("=== getProc2")
