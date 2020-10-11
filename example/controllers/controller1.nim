@@ -27,9 +27,12 @@ proc redirect*(request:Request, params:Params):Future[Response] {.async.} =
 
 proc postString*(request:Request, params:Params):Future[Response] {.async.} =
   construct()
-  echo params.requestParams.repr
+  params.requestParams["img"].save("/var/tmp")
+  params.requestParams["txt"].save("/var/tmp")
+  params.requestParams["img"].save("/var/tmp", "iamge")
+  params.requestParams["txt"].save("/var/tmp", "text")
   let response = %*{
-    "filename": params.requestParams["postFile"].filename,
-    "value": params.requestParams["postFile"].value
+    "filename": params.requestParams["txt"].filename,
+    "value": params.requestParams["txt"].body
   }
   return render(response)

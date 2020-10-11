@@ -1,0 +1,1 @@
+nim c -r --threads:on --threadAnalysis:off -f -d:release main

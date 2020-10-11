@@ -9,6 +9,9 @@ proc controller():Future[JsonNode] {.async.} =
   let response = await rdb().table("world").asyncFind(i)
   return response
 
+settings:
+  port = Port(8080)
+
 routes:
   get "/":
     resp await controller()

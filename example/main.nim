@@ -6,7 +6,7 @@ import controllers/controller2
 import controllers/benchmarkController
 
 var routes = newRoutes()
-routes.get("/", controller1.getString)
+routes.get("/store", controller1.getString)
 routes.get("/json", controller1.getJson)
 routes.get("/dd", controller1.dd)
 routes.get("/redirect", controller1.redirect)
