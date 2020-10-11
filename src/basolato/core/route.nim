@@ -1,6 +1,6 @@
 import
-  asynchttpserver, asyncdispatch, json, tables, strformat, macros, strutils, re,
-  os
+  asynchttpserver, asyncdispatch, asyncfile, json, tables, strformat, macros,
+  strutils, re, os, mimetypes
 import request, response, header, logger, resources/errorPage, resources/ddPage
 export request, header
 
@@ -110,24 +110,35 @@ template serve*(routes:var Routes, port=5000) =
   proc cb(req: Request) {.async, gcsafe.} =
     var headers = newDefaultHeaders()
     var response = render(Http404, errorPage(Http404, ""), headers)
-    for route in routes.values:
-      try:
-        if route.httpMethod == req.httpMethod() and isMatchUrl(req.path, route.path):
-          let params = req.params(route)
-          response = await route.action(req, params)
-          logger($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
-          break
-      except Exception:
-        let exception = getCurrentException()
-        if exception.name == "DD".cstring:
-          var msg = exception.msg
-          msg = msg.replace(re"Async traceback:[.\s\S]*")
-          response = render(Http200, ddPage(msg), headers)
-        else:
-          let status = checkHttpCode(exception)
-          response = render(status, errorPage(status, exception.msg), headers)
-          echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
-          echoErrorMsg(exception.msg)
-          break
+    # static file response
+    if req.path.contains("."):
+      let filepath = getCurrentDir() & "/public" & req.path
+      if existsFile(filepath):
+        let file = openAsync(filepath, fmRead)
+        let data = await file.readAll()
+        let contentType = newMimetypes().getMimetype(req.path.split(".")[^1])
+        headers.set("Content-Type", contentType)
+        response = render(data, headers)
+    else:
+      # web app routes
+      for route in routes.values:
+        try:
+          if route.httpMethod == req.httpMethod() and isMatchUrl(req.path, route.path):
+            let params = req.params(route)
+            response = await route.action(req, params)
+            logger($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+            break
+        except Exception:
+          let exception = getCurrentException()
+          if exception.name == "DD".cstring:
+            var msg = exception.msg
+            msg = msg.replace(re"Async traceback:[.\s\S]*")
+            response = render(Http200, ddPage(msg), headers)
+          else:
+            let status = checkHttpCode(exception)
+            response = render(status, errorPage(status, exception.msg), headers)
+            echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+            echoErrorMsg(exception.msg)
+            break
     await req.respond(response.status, response.body, response.headers.toResponse())
   waitFor server.serve(Port(port), cb)

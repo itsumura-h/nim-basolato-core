@@ -6,6 +6,7 @@ proc makeController*(target:string, message:var string):int =
   let targetName = target.split("/").max()
   let targetCaptalized = snakeToCamel(targetName)
   let controller = &"""
+import json
 # framework
 import basolato/controller
 
