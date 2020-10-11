@@ -1,5 +1,5 @@
 import random
-import ../../../src/basolato/controller
+import ../../../../src/basolato/controller
 import allographer/query_builder
 
 const range1_10000 = 1..10000

@@ -1,7 +1,7 @@
 import json
 # framework
-import ../../../src/basolato/controller
-import ../../../src/basolato/request_validation
+import ../../../../src/basolato/controller
+import ../../../../src/basolato/request_validation
 
 proc index*(request:Request, params:Params):Future[Response] {.async.} =
   return render("index")

@@ -1,5 +1,5 @@
 import asynchttpserver, asyncdispatch, httpcore
-import ../src/basolato
+import ../../src/basolato
 
 import app/controllers/controller2
 import app/controllers/controller1
