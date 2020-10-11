@@ -1,8 +1,10 @@
 import asyncdispatch, asynchttpserver
 export asyncdispatch, asynchttpserver
 
-import core/request, core/base, core/response, core/route, core/header
-export request, response, route, header
+import
+  core/request, core/base, core/response, core/route, core/header
+export
+  request, response, route, header
 
 proc dd*(outputs: varargs[string]) =
   when not defined(release):

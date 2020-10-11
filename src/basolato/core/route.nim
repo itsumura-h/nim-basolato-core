@@ -1,7 +1,7 @@
 import
   asynchttpserver, asyncdispatch, json, tables, strformat, macros, strutils, re,
   os
-import request, response, header, resources/errorPage, resources/ddPage
+import request, response, header, logger, resources/errorPage, resources/ddPage
 export request, header
 
 
@@ -104,10 +104,6 @@ proc checkHttpCode(exception:ref Exception):HttpCode =
   ##   .
   createHttpCodeError
 
-type Settings = ref object
-  host:string
-  port:int
-
 
 template serve*(routes:var Routes, port=5000) =
   var server = newAsyncHttpServer()
@@ -119,6 +115,7 @@ template serve*(routes:var Routes, port=5000) =
         if route.httpMethod == req.httpMethod() and isMatchUrl(req.path, route.path):
           let params = req.params(route)
           response = await route.action(req, params)
+          logger($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
           break
       except Exception:
         let exception = getCurrentException()
@@ -129,6 +126,8 @@ template serve*(routes:var Routes, port=5000) =
         else:
           let status = checkHttpCode(exception)
           response = render(status, errorPage(status, exception.msg), headers)
+          echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+          echoErrorMsg(exception.msg)
           break
     await req.respond(response.status, response.body, response.headers.toResponse())
   waitFor server.serve(Port(port), cb)

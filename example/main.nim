@@ -1,9 +1,10 @@
 import asynchttpserver, asyncdispatch, httpcore
 import ../src/basolato
 
-import controllers/controller1
-import controllers/controller2
-import controllers/benchmarkController
+import app/controllers/controller2
+import app/controllers/controller1
+import app/controllers/benchmark_controller
+import app/controllers/validation_controller
 
 var routes = newRoutes()
 routes.get("/", controller1.getString)
@@ -13,5 +14,7 @@ routes.get("/dd", controller1.dd)
 routes.get("/redirect", controller1.redirect)
 routes.get("/db", benchmarkController.db)
 routes.get("/{id:int}", controller2.getString)
+
+routes.post("/validation/store", validation_controller.store)
 
 serve(routes)

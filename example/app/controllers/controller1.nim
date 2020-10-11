@@ -1,5 +1,5 @@
 import json
-import ../../src/controller
+import ../../../src/basolato/controller
 
 
 proc construct() =
@@ -33,6 +33,6 @@ proc postString*(request:Request, params:Params):Future[Response] {.async.} =
   params.requestParams["txt"].save("/var/tmp", "text")
   let response = %*{
     "filename": params.requestParams["txt"].filename,
-    "value": params.requestParams["txt"].body
+    "value": params.requestParams.get("txt")
   }
   return render(response)

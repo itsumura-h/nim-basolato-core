@@ -1,6 +1,6 @@
 import
-  asynchttpserver, json, strutils, re, cgi, tables, os, strformat, strtabs,
-  parseutils, net
+  asynchttpserver, json, strutils, cgi, tables, os, strformat, strtabs,
+  parseutils, net, uri
 
 
 proc path*(request:Request):string =
@@ -66,11 +66,11 @@ type RequestParam* = ref object
 type RequestParams* = Table[string, RequestParam]
 type MultiData* = OrderedTable[string, tuple[fields: StringTableRef, body: string]]
 
-proc fileName*(param:RequestParam):string =
-  return param.fileName
-
-proc body*(param:RequestParam):string =
-  return param.body
+proc get*(params:RequestParams, key:string, default=""):string =
+  if params.hasKey(key):
+    return params[key].body
+  else:
+    return default
 
 template parseContentDisposition() =
   var hCount = 0
@@ -159,7 +159,7 @@ proc getRequestParams*(request:Request):RequestParams =
             body: row.body
           )
     elif contentType.contains("application/x-www-form-urlencoded"):
-      let rows = request.body.split("&")
+      let rows = request.body.decodeUrl().split("&")
       for row in rows:
         let row = row.split("=")
         params[row[0]] = RequestParam(
@@ -172,6 +172,10 @@ proc `[]`*(params:RequestParams, key:string):RequestParam =
 
 proc save*(param:RequestParam, dir:string) =
   ## save file with same file name
+  ## .. code-block:: nim
+  ##   assert requestParams["upload_file"].filename == "test.jpg"
+  ##   requestParams["upload_file"].save("/var/tmp")
+  ##   > /var/tmp/test.jpg is stored
   if param.fileName.len > 0:
     createDir(parentDir(dir))
     var f = open(&"{dir}/{param.fileName}", fmWrite)
@@ -180,6 +184,10 @@ proc save*(param:RequestParam, dir:string) =
 
 proc save*(param:RequestParam, dir:string, newFileName:string) =
   ## save file with new file name and same extention.
+  ## .. code-block:: nim
+  ##   assert requestParams["upload_file"].filename == "test.jpg"
+  ##   requestParams["upload_file"].save("/var/tmp", "newFileName")
+  ##   > /var/tmp/newFileName.jpg is stored
   if param.fileName.len > 0:
     createDir(parentDir(dir))
     var f = open(&"{dir}/{newFileName}.{param.ext}", fmWrite)

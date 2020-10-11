@@ -1,2 +1,2 @@
-import core/route
+import basolato/core/route
 export route

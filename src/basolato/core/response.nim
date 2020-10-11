@@ -49,7 +49,7 @@ proc render*(status:HttpCode, body:JsonNode):Response =
   var headers = newDefaultHeaders()
   headers.set("Content-Type", "application/json; charset=utf-8")
   return Response(
-    status:Http200,
+    status:status,
     body: $body,
     headers: headers
   )
@@ -59,7 +59,7 @@ proc render*(status:HttpCode, body:JsonNode, headers:var Headers):Response =
     headers.set("Content-Type", "application/json; charset=utf-8")
   headers.setDefaultHeaders()
   return Response(
-    status:Http200,
+    status:status,
     body: $body,
     headers: headers
   )

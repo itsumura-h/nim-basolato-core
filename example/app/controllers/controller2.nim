@@ -1,5 +1,4 @@
-import json
-import ../../src/controller
+import ../../../src/basolato/controller
 
 
 proc construct() =
