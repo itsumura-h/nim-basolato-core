@@ -86,7 +86,7 @@ of "Error{num.repr}":
 case $exception.name
 {strBody}
 else:
-  return Http500
+  return Http400
 """)
 
 proc checkHttpCode(exception:ref Exception):HttpCode =
@@ -129,5 +129,6 @@ template serve*(routes:var Routes, port=5000) =
         else:
           let status = checkHttpCode(exception)
           response = render(status, errorPage(status, exception.msg), headers)
+          break
     await req.respond(response.status, response.body, response.headers.toResponse())
   waitFor server.serve(Port(port), cb)

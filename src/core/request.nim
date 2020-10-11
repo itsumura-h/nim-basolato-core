@@ -18,10 +18,14 @@ proc isNumeric(str:string):bool =
 proc isMatchUrl*(requestPath, routePath:string):bool =
   var requestPath = requestPath.split("/")[1..^1]
   var routePath = routePath.split("/")[1..^1]
-  for i in 0..<routePath.len:
+  if requestPath.len != routePath.len:
+    return false
+  for i in 0..<requestPath.len:
     if not routePath[i].contains("{") and routePath[i] != requestPath[i]:
       return false
     if routePath[i].contains("{"):
+      if requestPath[i].len == 0:
+        return false
       let typ = routePath[i].replace("{", "").replace("}", "").split(":")[1]
       if typ == "str" and requestPath[i].isNumeric:
         return false
@@ -31,18 +35,19 @@ proc isMatchUrl*(requestPath, routePath:string):bool =
 
 
 proc getUrlParams*(requestPath, routePath:string):JsonNode =
-  let requestPath = requestPath.split("/")[1..^1]
-  let routePath = routePath.split("/")[1..^1]
   var urlParams = newJObject()
-  for i in 0..<routePath.len:
-    if routePath[i].contains("{"):
-      let keyInUrl = routePath[i].replace("{", "").replace("}", "").split(":")
-      let key = keyInUrl[0]
-      let typ = keyInUrl[1]
-      if typ == "int":
-        urlParams[key] = %requestPath[i].split(":")[0].parseInt
-      elif typ == "str":
-        urlParams[key] = %requestPath[i].split(":")[0]
+  if routePath.contains("{"):
+    let requestPath = requestPath.split("/")[1..^1]
+    let routePath = routePath.split("/")[1..^1]
+    for i in 0..<routePath.len:
+      if routePath[i].contains("{"):
+        let keyInUrl = routePath[i].replace("{", "").replace("}", "").split(":")
+        let key = keyInUrl[0]
+        let typ = keyInUrl[1]
+        if typ == "int":
+          urlParams[key] = %requestPath[i].split(":")[0].parseInt
+        elif typ == "str":
+          urlParams[key] = %requestPath[i].split(":")[0]
   return urlParams
 
 proc getQueryParams*(request:Request):JsonNode =
@@ -138,26 +143,28 @@ proc parseMPFD*(contentType: string, body: string): MultiData =
 
 proc getRequestParams*(request:Request):RequestParams =
   var params = RequestParams()
-  if request.headers["content-type"].toString.contains("multipart/form-data"):
-    let formdata = parseMPFD(request.headers["content-type"].toString, request.body)
-    for key, row in formdata:
-      if row.fields.hasKey("filename"):
-        params[key] = RequestParam(
-          fileName: row.fields["filename"],
-          ext: row.fields["filename"].split(".")[^1],
-          body: row.body
+  if request.headers.hasKey("content-type"):
+    let contentType = request.headers["content-type"].toString
+    if contentType.contains("multipart/form-data"):
+      let formdata = parseMPFD(contentType, request.body)
+      for key, row in formdata:
+        if row.fields.hasKey("filename"):
+          params[key] = RequestParam(
+            fileName: row.fields["filename"],
+            ext: row.fields["filename"].split(".")[^1],
+            body: row.body
+          )
+        else:
+          params[key] = RequestParam(
+            body: row.body
+          )
+    elif contentType.contains("application/x-www-form-urlencoded"):
+      let rows = request.body.split("&")
+      for row in rows:
+        let row = row.split("=")
+        params[row[0]] = RequestParam(
+          body: row[1]
         )
-      else:
-        params[key] = RequestParam(
-          body: row.body
-        )
-  elif request.headers["content-type"].toString.contains("application/x-www-form-urlencoded"):
-    let rows = request.body.split("&")
-    for row in rows:
-      let row = row.split("=")
-      params[row[0]] = RequestParam(
-        body: row[1]
-      )
   return params
 
 proc `[]`*(params:RequestParams, key:string):RequestParam =
@@ -209,3 +216,19 @@ when isMainModule:
     requestPath = "/john"
     routePath = "/{name:str}"
     assert isMatchUrl(requestPath, routePath) == true
+
+    requestPath = "/"
+    routePath = "/{id:int}"
+    assert isMatchUrl(requestPath, routePath) == false
+
+    requestPath = "/1/asd"
+    routePath = "/{id:int}"
+    assert isMatchUrl(requestPath, routePath) == false
+
+    requestPath = "/1/1"
+    routePath = "/{id:int}"
+    assert isMatchUrl(requestPath, routePath) == false
+
+    requestPath = "/john/1"
+    routePath = "/{name:str}"
+    assert isMatchUrl(requestPath, routePath) == false
