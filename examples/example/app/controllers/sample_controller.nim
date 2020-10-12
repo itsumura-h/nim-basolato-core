@@ -15,11 +15,9 @@ import ../../resources/pages/sample/login
 proc index*(request:Request, params:Params):Future[Response] {.async.} =
   return render(await html("pages/sample/index.html"))
 
-
 proc welcome*(request:Request, params:Params):Future[Response] {.async.} =
   let name = "Basolato " & basolatoVersion
   return render(welcomeView(name))
-
 
 proc fib_logic(n: int): int =
   if n < 2:
@@ -46,7 +44,7 @@ proc react*(request:Request, params:Params):Future[Response] {.async.} =
               .select("users.id", "users.name", "users.email", "auth.auth")
               .join("auth", "auth.id", "=", "users.auth_id")
               .get()
-  # dd($users)
+  dd($users)
   return render(reactHtml($users))
 
 proc materialUi*(request:Request, params:Params):Future[Response] {.async.} =

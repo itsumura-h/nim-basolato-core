@@ -3,11 +3,11 @@ import ../../src/basolato
 # controller
 import app/controllers/sample_controller
 # middleware
-import app/middlewares/sample_middleware
+import app/middlewares/auth_middleware
 
 var routes = newRoutes()
 
-routes.middleware("sample/.*", sample_middleware.sample)
+routes.middleware(".*", auth_middleware.authCheck)
 
 routes.get("/", sample_controller.index)
 groups "/sample":
