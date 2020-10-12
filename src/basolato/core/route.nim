@@ -11,9 +11,13 @@ type Params* = ref object
   requestParams*:RequestParams
 
 type Route* = ref object
-  httpMethod*: HttpMethod
+  httpMethod*:HttpMethod
   path*:string
-  action*: proc(request:Request, params:Params):Future[Response]
+  action*:proc(r:Request, p:Params):Future[Response]
+
+type MiddlewareRoute* = ref object
+  path*:string
+  action*:proc(r:Request, p:Params)
 
 
 proc params*(request:Request, route:Route):Params =
@@ -25,50 +29,77 @@ proc params*(request:Request, route:Route):Params =
     requestParams: getRequestParams(request)
   )
 
+proc params*(request:Request, middleware:MiddlewareRoute):Params =
+  let url = request.path
+  let path = middleware.path
+  return Params(
+    urlParams: getUrlParams(url, path),
+    queryParams: getQueryParams(request),
+    requestParams: getRequestParams(request)
+  )
+
 type Routes* = ref object
-  values*: seq[Route]
+  values: seq[Route]
+  middlewares: seq[MiddlewareRoute]
 
 proc newRoutes*():Routes =
   return Routes()
 
-proc newRoute(httpMethod:HttpMethod, path:string, action:proc(request:Request, params:Params):Future[Response]):Route =
+proc newRoute(httpMethod:HttpMethod, path:string, action:proc(r:Request, p:Params):Future[Response]):Route =
   return Route(
     httpMethod:httpMethod,
     path:path,
     action:action
   )
 
-proc add*(this:var Routes, httpMethod:HttpMethod, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc add*(this:var Routes, httpMethod:HttpMethod, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   this.values.add(
     newRoute(httpMethod, path, action)
   )
 
-proc get*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc middleware*(this:var Routes, path:string, action:proc(r:Request, p:Params)) =
+  this.middlewares.add(
+    MiddlewareRoute(
+      path: path,
+      action: action
+    )
+  )
+
+proc get*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpGet, path, action)
 
-proc post*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc post*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpPost, path, action)
 
-proc put*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc put*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpPut, path, action)
 
-proc patch*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc patch*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpPatch, path, action)
 
-proc delete*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc delete*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpDelete, path, action)
 
-proc head*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc head*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpHead, path, action)
 
-proc options*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc options*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpOptions, path, action)
 
-proc trace*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc trace*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpTrace, path, action)
 
-proc connect*(this:var Routes, path:string, action:proc(request:Request, params:Params):Future[Response]) =
+proc connect*(this:var Routes, path:string, action:proc(r:Request, p:Params):Future[Response]) =
   add(this, HttpConnect, path, action)
+
+macro groups*(head, body:untyped):untyped =
+  var newNode = ""
+  for row in body:
+    let rowNode = fmt"""
+{row[0].repr}("{head}{row[1]}", {row[2].repr})
+"""
+    newNode.add(rowNode)
+  return parseStmt(newNode)
 
 
 const errorStatusArray* = [505, 504, 503, 502, 501, 500, 451, 431, 429, 428, 426,
@@ -120,25 +151,39 @@ template serve*(routes:var Routes, port=5000) =
         headers.set("Content-Type", contentType)
         response = render(data, headers)
     else:
-      # web app routes
-      for route in routes.values:
-        try:
-          if route.httpMethod == req.httpMethod() and isMatchUrl(req.path, route.path):
-            let params = req.params(route)
-            response = await route.action(req, params)
-            logger($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
-            break
-        except Exception:
-          let exception = getCurrentException()
-          if exception.name == "DD".cstring:
-            var msg = exception.msg
-            msg = msg.replace(re"Async traceback:[.\s\S]*")
-            response = render(Http200, ddPage(msg), headers)
-          else:
+      block middlewareAndApp:
+        # middleware:
+        for route in routes.middlewares:
+          try:
+            if find(req.path, re route.path) >= 0:
+              let params = req.params(route)
+              route.action(req, params)
+          except Exception:
+            let exception = getCurrentException()
             let status = checkHttpCode(exception)
             response = render(status, errorPage(status, exception.msg), headers)
             echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
             echoErrorMsg(exception.msg)
-            break
+            break middlewareAndApp
+        # web app routes
+        for route in routes.values:
+          try:
+            if route.httpMethod == req.httpMethod() and isMatchUrl(req.path, route.path):
+              let params = req.params(route)
+              response = await route.action(req, params)
+              logger($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+              break
+          except Exception:
+            let exception = getCurrentException()
+            if exception.name == "DD".cstring:
+              var msg = exception.msg
+              msg = msg.replace(re"Async traceback:[.\s\S]*")
+              response = render(Http200, ddPage(msg), headers)
+            else:
+              let status = checkHttpCode(exception)
+              response = render(status, errorPage(status, exception.msg), headers)
+              echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+              echoErrorMsg(exception.msg)
+              break
     await req.respond(response.status, response.body, response.headers.toResponse())
   waitFor server.serve(Port(port), cb)

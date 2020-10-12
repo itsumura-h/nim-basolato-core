@@ -1,15 +1,17 @@
-import asyncdispatch, asynchttpserver
+import asyncdispatch, asynchttpserver, os, asyncfile
 export asyncdispatch, asynchttpserver
 
 import
-  core/request, core/base, core/response, core/route, core/header
+  core/base, core/request, core/response, core/route, core/header,
+  core/security
 export
-  request, response, route, header
+  base, request, response, route, header, security
 
-proc dd*(outputs: varargs[string]) =
-  when not defined(release):
-    var output:string
-    for i, row in outputs:
-      if i > 0: output &= "\n\n" else: output &= "\n"
-      output.add(row)
-    raise newException(DD, output)
+
+proc html*(r_path:string):Future[string] {.async.} =
+  ## arg r_path is relative path from /resources/
+  let path = getCurrentDir() & "/resources/" & r_path
+  let f = openAsync(path, fmRead)
+  defer: f.close()
+  let data = await f.readAll()
+  return $data

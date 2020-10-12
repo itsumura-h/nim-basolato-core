@@ -1,5 +1,5 @@
-import httpcore, json
-import header
+import httpcore, json, strutils, times
+import baseEnv, header, security, logger
 
 type Response* = ref object
   status*:HttpCode
@@ -117,4 +117,41 @@ proc setHeader*(response:Response, headers:Headers):Response =
       response.headers.add((header.key, header.val))
     else:
       response.headers[index] = (header.key, tmpValue & ", " & header.val)
+  return response
+
+
+# ========== Auth ====================
+proc setAuth*(response:Response, auth:Auth):Response =
+  let sessionId = auth.getToken()
+  let cookie = if SESSION_TIME.len > 0:
+    newCookieData(
+      "session_id",
+      sessionId,
+      timeForward(SESSION_TIME.parseInt, Minutes)
+    )
+    .toCookieStr()
+  else:
+    newCookieData("session_id", sessionId).toCookieStr()
+
+  response.headers.add(("Set-cookie", cookie))
+  return response
+
+
+# ========== Cookie ====================
+proc setCookie*(response:Response, cookie:Cookie):Response =
+  for cookieData in cookie.cookies:
+    let cookieStr = cookieData.toCookieStr()
+    response.headers.add(("Set-cookie", cookieStr))
+  return response
+
+
+proc destroyAuth*(response:Response, auth:Auth):Response =
+  if auth.isLogin:
+    let sessionId = auth.getToken()
+    let cookie = newCookieData("session_id", sessionId, timeForward(-1, Days))
+                  .toCookieStr()
+    response.headers.add(("Set-cookie", cookie))
+    auth.destroy()
+  else:
+    echoErrorMsg("Tried to destroy auth but not logged in")
   return response
