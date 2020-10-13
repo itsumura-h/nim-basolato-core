@@ -12,7 +12,7 @@ proc cb(req: Request) {.async.} =
   await req.respond(Http200, $response, header)
 
 proc main =
-  var server = newAsyncHttpServer()
-  waitFor server.serve(Port(8080), cb)
+  let server = newAsyncHttpServer()
+  waitFor server.serve(Port(5000), cb)
 
 main()
