@@ -1,21 +1,27 @@
-#? stdtmpl | standard
-# #framework
-# import ../../../../../src/basolato/view
-#proc loginHtml*(auth:Auth): string =
+import ../../../../../src/basolato/view
+import ../../layouts/application_view
+
+proc impl(auth:Auth): string = tmpli html"""
 <a href="/">go back</a>
 <div>
-  #if auth.isLogin():
-    <h1>Login Name: ${auth.get("name")}</h1>
+  $if auth.isLogin(){
+    <h1>Login Name: $(auth.get("name"))</h1>
     <form method="POST" action="/sample/logout">
-      ${csrfToken()}
+      $(csrfToken())
       <button type="submit">Logout</button>
     </form>
-  #else:
+  }
+  $else{
     <form method="POST">
-      ${csrfToken()}
+      $(csrfToken())
       <input type="text" name="name">
       <input type="text" name="password">
       <button type="submit">login</button>
     </form>
-  #end if
+  }
 </div>
+"""
+
+proc loginView*(auth:Auth):string =
+  const title = "Login"
+  return applicationView(title, impl(auth))

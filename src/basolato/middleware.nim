@@ -23,6 +23,8 @@ proc checkCsrfToken*(request:Request, params:Params):Check =
   result = Check(status:true)
   if request.reqMethod == HttpPost and not request.path.contains("api/"):
     try:
+      if not params.requestParams.hasKey("csrf_token"):
+        raise newException(Exception, "csrf token is missing")
       let token = params.requestParams.get("csrf_token")
       discard newCsrfToken(token).checkCsrfTimeout()
     except:
@@ -32,6 +34,7 @@ proc checkCsrfToken*(request:Request, params:Params):Check =
       )
 
 proc checkAuthToken*(request:Request):Check =
+  ## Check session id in cookie is valid.
   result = Check(status:true)
   let cookie = newCookie(request)
   if cookie.hasKey("session_id"):

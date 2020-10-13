@@ -8,10 +8,26 @@ export
   base, request, response, route, header, security
 
 
-proc html*(r_path:string):Future[string] {.async.} =
-  ## arg r_path is relative path from /resources/
-  let path = getCurrentDir() & "/resources/" & r_path
+proc asyncHtml*(path:string):Future[string] {.async.} =
+  ## Open html file asynchronous.
+  ## arg path is relative path from /resources/
+  ## .. code-block:: nim
+  ##   let indexHtml = await asyncHtml("pages/index.html")
+  ##   return render(indexHtml)
+  let path = getCurrentDir() & "/resources/" & path
   let f = openAsync(path, fmRead)
   defer: f.close()
   let data = await f.readAll()
+  return $data
+
+proc html*(path:string):string =
+  ## Open html file.
+  ## arg path is relative path from /resources/
+  ## .. code-block:: nim
+  ##   let indexHtml = html("pages/index.html")
+  ##   return render(indexHtml)
+  let path = getCurrentDir() & "/resources/" & path
+  let f = open(path, fmRead)
+  defer: f.close()
+  let data = f.readAll()
   return $data

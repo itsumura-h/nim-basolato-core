@@ -1,4 +1,4 @@
-import ../../../../src/basolato/view
+import basolato/view
 import ../layouts/application_view
 
 proc impl(title, name:string):string = tmpli html"""
@@ -120,5 +120,5 @@ proc impl(title, name:string):string = tmpli html"""
 """
 
 proc welcomeView*(name:string):string =
-  const title = "Welcome"
+  let title = "Welcome Basolato"
   return impl(title, name)

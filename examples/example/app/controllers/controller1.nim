@@ -27,10 +27,14 @@ proc redirect*(request:Request, params:Params):Future[Response] {.async.} =
 
 proc postString*(request:Request, params:Params):Future[Response] {.async.} =
   construct()
-  params.requestParams["img"].save("/var/tmp")
-  params.requestParams["txt"].save("/var/tmp")
-  params.requestParams["img"].save("/var/tmp", "iamge")
-  params.requestParams["txt"].save("/var/tmp", "text")
+  if params.requestParams.hasKey("img"):
+    params.requestParams["img"].save("/var/tmp")
+    params.requestParams["img"].save("/var/tmp", "iamge")
+
+  if params.requestParams.hasKey("txt"):
+    params.requestParams["txt"].save("/var/tmp")
+    params.requestParams["txt"].save("/var/tmp", "text")
+
   let response = %*{
     "filename": params.requestParams["txt"].filename,
     "value": params.requestParams.get("txt")

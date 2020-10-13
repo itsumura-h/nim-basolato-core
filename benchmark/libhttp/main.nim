@@ -14,7 +14,7 @@ proc cb(req: Request, res: Response) {.async, gcsafe.} =
     .send($response)
 
 proc main =
-  var server = createServer(port=8080)
+  var server = createServer(port=5000)
   waitFor server.serve(cb)
   runForever()
 

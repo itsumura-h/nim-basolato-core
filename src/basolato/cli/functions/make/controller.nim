@@ -4,7 +4,6 @@ import utils
 proc makeController*(target:string, message:var string):int =
   let targetPath = &"{getCurrentDir()}/app/controllers/{target}_controller.nim"
   let targetName = target.split("/").max()
-  let targetCaptalized = snakeToCamel(targetName)
   let controller = &"""
 import json
 # framework

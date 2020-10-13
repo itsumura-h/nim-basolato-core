@@ -48,7 +48,7 @@ proc reactHtml*(users:string): string = tmpli html"""
   }
   function App(){
     return <div>
-      <a href="/">back</a>
+      <a href="/">go back</a>
       <BrowserRouter>
         <Header/>
         <Switch>

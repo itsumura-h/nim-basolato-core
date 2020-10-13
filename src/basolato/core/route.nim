@@ -160,10 +160,14 @@ template serve*(routes:var Routes, port=5000) =
               route.action(req, params)
           except Exception:
             let exception = getCurrentException()
-            let status = checkHttpCode(exception)
-            response = render(status, errorPage(status, exception.msg), headers)
-            echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
-            echoErrorMsg(exception.msg)
+            if exception.name == "ErrorAuthRedirect".cstring:
+              headers.set("Location", exception.msg)
+              response = render(Http302, "", headers)
+            else:
+              let status = checkHttpCode(exception)
+              response = render(status, errorPage(status, exception.msg), headers)
+              echoErrorMsg($response.status & "  " & req.hostname & "  " & $req.httpMethod & "  " & req.path)
+              echoErrorMsg(exception.msg)
             break middlewareAndApp
         # web app routes
         for route in routes.values:

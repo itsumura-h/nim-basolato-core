@@ -1,6 +1,6 @@
 version       = "0.6.0"
 author        = "Hidenobu Itsumura @dumblepytech1 as 'medy'"
-description   = "A full-stack web framework library for Nim"
+description   = "An asynchronous full-stack web framework for Nim"
 license       = "MIT"
 srcDir        = "src"
 backend       = "c"

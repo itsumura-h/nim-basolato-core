@@ -1,19 +1,18 @@
-import json, times, strformat, strutils
+import json, times, strformat
 # framework
 import ../../../../src/basolato/controller
-import ../../../../src/basolato/core/base
 import allographer/query_builder
 # view
 import ../../resources/pages/welcome_view
 import ../../resources/pages/sample/react
 import ../../resources/pages/sample/material_ui
 import ../../resources/pages/sample/vuetify
-import ../../resources/pages/sample/cookie
-import ../../resources/pages/sample/login
 
+
+let indexHtml = html("pages/sample/index.html")
 
 proc index*(request:Request, params:Params):Future[Response] {.async.} =
-  return render(await html("pages/sample/index.html"))
+  return render(indexHtml)
 
 proc welcome*(request:Request, params:Params):Future[Response] {.async.} =
   let name = "Basolato " & basolatoVersion
@@ -44,7 +43,6 @@ proc react*(request:Request, params:Params):Future[Response] {.async.} =
               .select("users.id", "users.name", "users.email", "auth.auth")
               .join("auth", "auth.id", "=", "users.auth_id")
               .get()
-  dd($users)
   return render(reactHtml($users))
 
 proc materialUi*(request:Request, params:Params):Future[Response] {.async.} =
@@ -79,56 +77,6 @@ proc customHeaders*(request:Request, params:Params):Future[Response] {.async.} =
   header.set("setHeaderTest", "aaaa")
   return render("with header").setHeader(header)
 
-# ========== Cookie ====================
-proc indexCookie*(request:Request, params:Params):Future[Response] {.async.} =
-  let auth = newAuth(request)
-  return render(cookieHtml(auth))
-
-proc storeCookie*(request:Request, params:Params):Future[Response] {.async.} =
-  let auth = newAuth(request)
-  let key = params.requestParams.get("key")
-  let value = params.requestParams.get("value")
-  var cookie = newCookie(request)
-  cookie.set(key, value)
-  return render(cookieHtml(auth)).setCookie(cookie)
-
-proc updateCookie*(request:Request, params:Params):Future[Response] {.async.} =
-  let key = params.requestParams.get("key")
-  let days = params.requestParams.get("days").parseInt
-  var cookie = newCookie(request)
-  cookie.updateExpire(key, days, Days)
-  return redirect("/sample/cookie").setCookie(cookie)
-
-proc destroyCookie*(request:Request, params:Params):Future[Response] {.async.} =
-  let key = params.requestParams.get("key")
-  var cookie = newCookie(request)
-  cookie.delete(key)
-  return redirect("/sample/cookie").setCookie(cookie)
-
-proc destroyCookies*(request:Request, params:Params):Future[Response] {.async.} =
-  # TODO: not work until https://github.com/dom96/jester/pull/237 is mearged and release
-  var cookie = newCookie(request)
-  cookie.destroy()
-  return redirect("/sample/cookie").setCookie(cookie)
-
-# ========== Login ====================
-proc indexLogin*(request:Request, params:Params):Future[Response] {.async.} =
-  let auth = newAuth(request)
-  return render(loginHtml(auth))
-
-proc storeLogin*(request:Request, params:Params):Future[Response] {.async.} =
-  let name = params.requestParams.get("name")
-  let password = params.requestParams.get("password")
-  # auth
-  let auth = newAuth()
-  auth.login()
-  auth.set("name", name)
-  return redirect("/sample/login").setAuth(auth)
-
-proc destroyLogin*(request:Request, params:Params):Future[Response] {.async.} =
-  let auth = newAuth(request)
-  return redirect("/sample/login").destroyAuth(auth)
-
 proc presentDd*(request:Request, params:Params):Future[Response] {.async.} =
   var a = %*{
     "key1": "value1",
@@ -139,6 +87,6 @@ proc presentDd*(request:Request, params:Params):Future[Response] {.async.} =
   dd(
     $a,
     "abc",
-    # this.request.repr,
+    # request.repr,
   )
   return render("dd")

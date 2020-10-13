@@ -72,6 +72,9 @@ proc get*(params:RequestParams, key:string, default=""):string =
   else:
     return default
 
+proc hasKey*(params:RequestParams, key:string):bool =
+  return tables.hasKey(params, key)
+
 template parseContentDisposition() =
   var hCount = 0
   while hCount < hValue.len()-1:
@@ -177,7 +180,10 @@ proc save*(param:RequestParam, dir:string) =
   ##   requestParams["upload_file"].save("/var/tmp")
   ##   > /var/tmp/test.jpg is stored
   if param.fileName.len > 0:
-    createDir(parentDir(dir))
+    var dir = dir
+    if dir[0] == '.':
+      dir = getCurrentDir() / dir
+    createDir(dir)
     var f = open(&"{dir}/{param.fileName}", fmWrite)
     defer: f.close()
     f.write(param.body)
@@ -189,7 +195,10 @@ proc save*(param:RequestParam, dir:string, newFileName:string) =
   ##   requestParams["upload_file"].save("/var/tmp", "newFileName")
   ##   > /var/tmp/newFileName.jpg is stored
   if param.fileName.len > 0:
-    createDir(parentDir(dir))
+    var dir = dir
+    if dir[0] == '.':
+      dir = getCurrentDir() / dir
+    createDir(dir)
     var f = open(&"{dir}/{newFileName}.{param.ext}", fmWrite)
     defer: f.close()
     f.write(param.body)

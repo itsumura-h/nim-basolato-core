@@ -1,4 +1,4 @@
-import ../../../../src/basolato/middleware
+import basolato/middleware
 
 proc checkCsrfTokenMiddleware*(r:Request, p:Params) =
   checkCsrfToken(r, p).catch(Error403)

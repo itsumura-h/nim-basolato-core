@@ -69,7 +69,7 @@ proc newSessionDb*(sessionId=""):SessionDb =
   let db = createParentFlatDbDir()
   defer: db.close()
   var sessionDb: SessionDb
-  # clean expired session 1/100
+  # clean expired session probability of 1/100
   randomize()
   if rand(1..100) == 1:
     sessionDb.clean()
