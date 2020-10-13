@@ -18,8 +18,6 @@ coverage/*
 lcov.info
 
 *.sqlite3
-migration.json
-examples2
 *.out
 karax
 *.js
