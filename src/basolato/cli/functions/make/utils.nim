@@ -1,7 +1,7 @@
 import os, strformat, strutils, terminal, random
 
 proc isFileExists*(targetPath:string):bool =
-  if existsFile(targetPath):
+  if fileExists(targetPath):
     let message = &"{targetPath} is already exists"
     styledWriteLine(stdout, fgRed, bgDefault, message, resetStyle)
     return true

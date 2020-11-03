@@ -350,7 +350,7 @@ proc some*(this:Auth, key:string):bool =
   elif this.session.isNil:
     return false
   else:
-    this.session.some(key)
+    return this.session.some(key)
 
 proc get*(this:Auth, key:string):string =
   if this.session.some("isLogin"):

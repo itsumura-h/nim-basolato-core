@@ -147,7 +147,7 @@ template serve*(routes:var Routes, port=5000) =
     # static file response
     if req.path.get.contains("."):
       let filepath = getCurrentDir() & "/public" & req.path.get
-      if existsFile(filepath):
+      if fileExists(filepath):
         let file = openAsync(filepath, fmRead)
         let data = await file.readAll()
         let contentType = newMimetypes().getMimetype(req.path.get.split(".")[^1])

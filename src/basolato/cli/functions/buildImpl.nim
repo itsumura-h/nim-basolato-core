@@ -1,6 +1,6 @@
-import os, strformat
+import os, strformat, strutils
 
-proc build*(args:seq[string]) =
+proc build*(ports="5000", args:seq[string]) =
   ## Build for production setting
   var outputFileName = "main"
   try:
@@ -8,12 +8,24 @@ proc build*(args:seq[string]) =
   except:
     discard
 
-  discard execShellCmd(&"""
-    nim c \
-    -d:release \
-    --threads:on \
-    --threadAnalysis:off \
-    --opt:size \
-    --out:{outputFileName} \
-    main.nim
-  """)
+  if ports.contains(","):
+    for port in ports.split(","):
+      discard execShellCmd(&"""
+        nim c \
+        -d:release \
+        --opt:size \
+        --out:{outputFileName}{port} \
+        --putenv:port={port} \
+        main.nim
+      """)
+  else:
+    discard execShellCmd(&"""
+      nim c \
+      -d:release \
+      --threads:on \
+      --threadAnalysis:off \
+      --opt:size \
+      --out:{outputFileName} \
+      --putenv:port={ports} \
+      main.nim
+    """)
